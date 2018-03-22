@@ -1,0 +1,144 @@
+<!doctype html><html lang="en"><head><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/reveal.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/theme/white.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Sans:300,400"><style>.reveal h1,
+      .reveal h2,
+      .reveal h3,
+      .reveal h4,
+      .reveal h5,
+      .reveal h6 {
+        color: #333;
+        font-family: "Fira Sans", sans-serif;
+        font-weight: 300;
+        text-transform: none;
+      }
+
+      .reveal a {
+        color: #0067e6;
+        text-decoration: underline;
+      }
+
+      .reveal pre {
+        display: inline-block;
+        width: auto;
+        box-shadow: none;
+      }
+      .reveal pre code {
+        background: none;
+      }
+      .reveal section img {
+        background: none;
+        border: none;
+        box-shadow: none;
+      }</style><title>Developing Accessible Pattern Libraries</title></head><body><div class="reveal"><div class="slides"><section><section><h1><small>Developing Accessible<br>Pattern Libraries</small></h1></section><section><h2>Follow along</h2><a href="https://git.io/vxWhu">https://git.io/vxWhu</a></section><section><h2>Who am I?</h2></section><section><h2>Kasper Isager</h2><h3 class="fragment">Product Owner, Accessibility<br>@ Siteimprove</h3></section><section><h4>Primary focus<h4><h3 class="fragment">Lead the development of our accessibility testing engine</h3></h4></h4></section><section><h4>Before that...<h4><h3 class="fragment">Software Developer, Core<br>@ Siteimprove</h3></h4></h4></section><section><h4>Primary focus<h4><h3 class="fragment">Lead the development of our internal pattern library</h3></h4></h4></section><section><h3>What we will look at</h3><h2 class="fragment">What we've developed</h2><h2 class="fragment">Good API design</h2><h2 class="fragment">Useful abstractions</h2></section></section><section><section><h2>What we've developed</h2></section><section><h4>Our goal</h4><h3>Provide a suite of fully accessible baseline components</h3></section><section><img src="img/vue.svg" alt="Vue.js" height="200"><h2>Vue.js</h2></section><section><h3>Vue.js allows developers to write plain HTML and JavaScript</h3></section><section><iframe src="https://siteimprove.github.io/ui/components/badge" width="800" height="600"></iframe></section></section><section><section><h2>Good API design</h2></section><section><h3>Interacting with any API is like filling out a questionnaire</h3></section><section><h3>HTML: Low level</h3></section><section><h4>What kind of element would you like?</h4><pre class="fragment"><code class="html" data-trim>
+    <div>...</div>
+  </code></pre></section><section><h4>How would you like to identify it?</h4><pre class="fragment"><code class="html" data-trim>
+    <div class="tab">...</div>
+  </code></pre></section><section><h4>Does it have any state you want to identify?</h4><pre class="fragment"><code class="html" data-trim>
+    <div class="tab is-selected">...</div>
+  </code></pre></section><section><h4>At this point, our tab only conveys structure and styling; we need semantics as well</h4></section><section><h3>ARIA: Still low level</h3></section><section><h4>What <em>is</em> the thing actually?</h4><pre class="fragment"><code class="html" data-trim>
+    <div class="tab is-selected" role="tab">...</div>
+  </code></pre></section><section><h4>What state is the tab currently in?</h4><pre class="fragment"><code class="html" data-trim>
+    <div class="tab is-selected" role="tab" aria-selected="true">...</div>
+  </code></pre></section><section><h3>Low level APIs quickly become tedious to work with and...</h3></section><section><h3>...developers <em>will</em> forget to fill out a question or ten</h3></section><section><h3>Let's improve the API!</h3></section><section><h3>As library developers, we control the questions posed</h3></section><section><h3>Components: High-ish level</h3></section><section><h4>What kind of thing do you want?</h4><pre class="fragment"><code class="html" data-trim>
+    <tab>...</tab>
+  </code></pre></section><section><h4>Should the tab be selected?</h4><pre class="fragment"><code class="html" data-trim>
+    &lt;tab selected>...&lt;/tab>
+  </code></pre></section><section><h4>Behind the scenes, we turn this...</h4><pre><code class="html" data-trim>
+    &lt;tab selected>...&lt;/tab>
+  </code></pre><div class="fragment"><h4>...into this</h4><pre><code class="html" data-trim>
+      <div class="tab is-selected" role="tab" aria-selected="true">...</div>
+    </code></pre></div></section><section><h4>By posing the "right" questions, we can cover a lot of ground on the accessibility front...</h4></section><section><h4>...without having to worry about developers forgetting to add those pesky ARIA attributes</h4></section></section><section><section><h2>Useful abstractions</h2></section><section><h2>Relations</h2></section><section><h4>Not connecting parts of a UI that relate to one another is a leading cause of <del>stress</del> <ins>accessibility issues</ins></h4></section><section><h3>Implicit relations</h3></section><section><h4>In this case, there's an implicit relation between the tab list and its associated tabs</h4><pre><code class="html" data-trim>
+    <tab-list>
+      &lt;tab selected>Tab 1&lt;/tab>
+      <tab>Tab 2</tab>
+    </tab-list>
+  </code></pre></section><section><h4>Behind the scenes, we may want to automatically set the <code>aria-activedescendant</code> attribute</h4><pre><code class="html" data-trim>
+    <div class="tab-list" role="tablist" aria-activedescendant="tab-1">
+      <div id="tab-1" class="tab is-selected" role="tab" aria-selected="true">
+        Tab 1
+      </div>
+      <div id="tab-2" class="tab" role="tab" aria-selected="false">
+        Tab 2
+      </div>
+    </div>
+  </code></pre></section><section><h4>It could look like the following in Vue.js using some utility mixins</h4><pre><code class="js" data-trim>
+    const tabs = relation({ explicit: false })
+
+    const TabList = {
+      mixins: [hasMany(tabs, "tabs")],
+      computed: {
+        activeDescendant() {
+          return this.tabs.find(tab => tab.selected)
+        }
+      }
+    }
+
+    const Tab = {
+      mixins: [memberOf(tabs)]
+    }
+  </code></pre></section><section><h3>Explicit relations</h3></section><section><h4>In this case, there's an explicit relation between the button and the content it collapses</h4><pre><code class="html" data-trim>
+    <collapse>
+      <template slot-scope="collapse">
+        <button :collapse="collapse">
+          Toggle collapse
+        </button>
+        <collapse-content>...</collapse-content>
+      </template>
+    </collapse>
+  </code></pre></section><section><h4>Behind the scenes, we may want to automatically set the <code>aria-controls</code> attribute</h4><pre><code class="html" data-trim>
+    <button aria-controls="collapsible">
+      Toggle collapse
+    </button>
+    &lt;div id="collapsible" class="collapse-content" hidden>...&lt;/div>
+  </code></pre></section><section><h4>Again, it could look like the following in Vue.js using some utility mixins</h4><pre><code class="js" data-trim>
+    const collapse = relation({ explicit: true })
+
+    const Collapse = {
+      mixins: [hasOne(collapse)],
+    }
+
+    const Button = {
+      mixins: [memberOf(collapse, "collapse")],
+      computed: {
+        controls() {
+          return this.collapse.id
+        }
+      }
+    }
+  </code></pre></section><section><h4>Implementations of the mixins used can be found at <a href="https://github.com/kasperisager/vue-relation">https://github.com/kasperisager/vue-relation</a></h4></section><section><h2>Interactions</h2></section><section><h4>Another common pitfall: When to use <code>&lt;a></code> and when to use <code>&lt;button></code>?</h4></section><section><h3>Find the "right" question to ask!</h3></section><section><h4>What kind of interaction do you want?</h4></section><section><h4>If you don't want interaction, this...</h4><pre><code class="html" data-trim>
+    <interactive>...</interactive>
+  </code></pre><div class="fragment"><h4>...turns into this</h4><pre><code class="html" data-trim>
+      <div>...</div>
+    </code></pre></div></section><section><h4>If you want interaction and have a link, this...</h4><pre><code class="html" data-trim>
+    <interactive href="/example">...</interactive>
+  </code></pre><div class="fragment"><h4>...turns into this</h4><pre><code class="html" data-trim>
+      <a href="/example">...</a>
+    </code></pre></div></section><section><h4>If you want interaction and have a click handler, this...</h4><pre><code class="html" data-trim>
+    <interactive @click="example">...</interactive>
+  </code></pre><div class="fragment"><h4>...turns into this</h4><pre><code class="html" data-trim>
+      <button @click="example">...</button>
+    </code></pre></div></section><section><h4>It could look like the following in Vue.js as a component template</h4><pre><code class="html" data-trim>
+    <template>
+      <a v-if="href" :href="href">
+        <slot></slot>
+      </a>
+
+      <button v-else-if="$listeners.click" @click="$listeners.click">
+        <slot></slot>
+      </button>
+
+      <div v-else>
+        <slot></slot>
+      </div>
+    </template>
+  </code></pre></section></section><section><section><h3>Go forth and develop accessible pattern libraries!</h3></section><section><h2>Questions?</h2></section><section data-background="#333"><h1>Thanks!</h1></section></section></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/lib/js/head.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/js/reveal.min.js"></script><script>Reveal.initialize({
+        history: true,
+        transitionSpeed: 'fast',
+        dependencies: [
+          {
+            src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/plugin/highlight/highlight.min.js',
+            async: true,
+            callback: function () {
+              hljs.initHighlightingOnLoad();
+            }
+          }
+        ]
+      });</script></body></html>
