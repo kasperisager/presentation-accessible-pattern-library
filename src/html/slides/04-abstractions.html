@@ -1,0 +1,188 @@
+<section>
+  <h2>Useful abstractions</h2>
+</section>
+
+<section>
+  <h2>Relations</h2>
+</section>
+
+<section>
+  <h4>Not connecting parts of a UI that relate to one another is a leading cause of <del>stress</del> <ins>accessibility issues</ins></h4>
+</section>
+
+<section>
+  <h3>Implicit relations</h3>
+</section>
+
+<section>
+  <h4>In this case, there's an implicit relation between the tab list and its associated tabs</h4>
+  <pre><code class="html" data-trim>
+    <tab-list>
+      &lt;tab selected>Tab 1&lt;/tab>
+      <tab>Tab 2</tab>
+    </tab-list>
+  </code></pre>
+</section>
+
+<section>
+  <h4>Behind the scenes, we may want to automatically set the <code>aria-activedescendant</code> attribute</h4>
+  <pre><code class="html" data-trim>
+    <div class="tab-list" role="tablist" aria-activedescendant="tab-1">
+      <div id="tab-1" class="tab is-selected" role="tab" aria-selected="true">
+        Tab 1
+      </div>
+      <div id="tab-2" class="tab" role="tab" aria-selected="false">
+        Tab 2
+      </div>
+    </div>
+  </code></pre>
+</section>
+
+<section>
+  <h4>It could look like the following in Vue.js using some utility mixins</a></h4>
+  <pre><code class="js" data-trim>
+    const tabs = relation({ explicit: false })
+
+    const TabList = {
+      mixins: [hasMany(tabs, "tabs")],
+      computed: {
+        activeDescendant() {
+          return this.tabs.find(tab => tab.selected)
+        }
+      }
+    }
+
+    const Tab = {
+      mixins: [memberOf(tabs)]
+    }
+  </code></pre>
+</section>
+
+<section>
+  <h3>Explicit relations</h3>
+</section>
+
+<section>
+  <h4>In this case, there's an explicit relation between the button and the content it collapses</h4>
+  <pre><code class="html" data-trim>
+    <collapse>
+      <template slot-scope="collapse">
+        <button :collapse="collapse">
+          Toggle collapse
+        </button>
+        <collapse-content>...</collapse-content>
+      </template>
+    </collapse>
+  </code></pre>
+</section>
+
+<section>
+  <h4>Behind the scenes, we may want to automatically set the <code>aria-controls</code> attribute</h4>
+  <pre><code class="html" data-trim>
+    <button aria-controls="collapsible">
+      Toggle collapse
+    </button>
+    &lt;div id="collapsible" class="collapse-content" hidden>...&lt;/div>
+  </code></pre>
+</section>
+
+<section>
+  <h4>Again, it could look like the following in Vue.js using some utility mixins</a></h4>
+  <pre><code class="js" data-trim>
+    const collapse = relation({ explicit: true })
+
+    const Collapse = {
+      mixins: [hasOne(collapse)],
+    }
+
+    const Button = {
+      mixins: [memberOf(collapse, "collapse")],
+      computed: {
+        controls() {
+          return this.collapse.id
+        }
+      }
+    }
+  </code></pre>
+</section>
+
+<section>
+  <h4>Implementations of the mixins used can be found at <a href="https://github.com/kasperisager/vue-relation">https://github.com/kasperisager/vue-relation</a></h4>
+</section>
+
+<section>
+  <h2>Interactions</h2>
+</section>
+
+<section>
+  <h4>Another common pitfall: When to use <code>&lt;a></code> and when to use <code>&lt;button></code>?</h4>
+</section>
+
+<section>
+  <h3>Find the "right" question to ask!</h3>
+</section>
+
+<section>
+  <h4>What kind of interaction do you want?</h4>
+</section>
+
+<section>
+  <h4>If you don't want interaction, this...</h4>
+  <pre><code class="html" data-trim>
+    <interactive>...</interactive>
+  </code></pre>
+
+  <div class="fragment">
+    <h4>...turns into this</h4>
+    <pre><code class="html" data-trim>
+      <div>...</div>
+    </code></pre>
+  </div>
+</section>
+
+<section>
+  <h4>If you want interaction and have a link, this...</h4>
+  <pre><code class="html" data-trim>
+    <interactive href="/example">...</interactive>
+  </code></pre>
+
+  <div class="fragment">
+    <h4>...turns into this</h4>
+    <pre><code class="html" data-trim>
+      <a href="/example">...</a>
+    </code></pre>
+  </div>
+</section>
+
+<section>
+  <h4>If you want interaction and have a click handler, this...</h4>
+  <pre><code class="html" data-trim>
+    <interactive @click="example">...</interactive>
+  </code></pre>
+
+  <div class="fragment">
+    <h4>...turns into this</h4>
+    <pre><code class="html" data-trim>
+      <button @click="example">...</button>
+    </code></pre>
+  </div>
+</section>
+
+<section>
+  <h4>It could look like the following in Vue.js as a component template</a></h4>
+  <pre><code class="html" data-trim>
+    <template>
+      <a v-if="href" :href="href">
+        <slot></slot>
+      </a>
+
+      <button v-else-if="$listeners.click" @click="$listeners.click">
+        <slot></slot>
+      </button>
+
+      <div v-else>
+        <slot></slot>
+      </div>
+    </template>
+  </code></pre>
+</section>
