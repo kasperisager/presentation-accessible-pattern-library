@@ -33,4 +33,4 @@ g.task("serve", ["watch"], () =>
   )
 );
 
-g.task("deploy", ["build"], () => g.src("dist/**/*").pipe($.deploy()));
+g.task("deploy", ["build"], () => g.src("dist/**/*").pipe($.ghPages()));
